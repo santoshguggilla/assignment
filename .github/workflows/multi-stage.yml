@@ -1,0 +1,32 @@
+name: Multi-Stage Deployment
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: ./.github/workflows/maven-ci.yml
+
+  deploy-dev:
+    needs: build
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: dev
+
+  deploy-test:
+    needs: deploy-dev
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: test
+
+  deploy-staging:
+    needs: deploy-test
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: staging
+
+  deploy-prod:
+    needs: deploy-staging
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: prod
