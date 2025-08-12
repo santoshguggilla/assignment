@@ -1,0 +1,93 @@
+name: Basic Maven CI/CD
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build and test
+        run: mvn clean package
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-app
+          path: target/*.jar
+
+  deploy-dev:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: my-app
+
+      - name: Deploy to Dev
+        run: echo "Deploying to dev with secret ${{ secrets.DEPLOY_KEY }}"
+        env:
+          DEPLOY_URL: ${{ vars.DEV_URL }}
+
+  deploy-test:
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    environment: test
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: my-app
+
+      - name: Deploy to Test
+        run: echo "Deploying to test with secret ${{ secrets.DEPLOY_KEY }}"
+        env:
+          DEPLOY_URL: ${{ vars.TEST_URL }}
+
+  deploy-staging:
+    needs: deploy-test
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: my-app
+
+      - name: Deploy to Staging
+        run: echo "Deploying to staging with secret ${{ secrets.DEPLOY_KEY }}"
+        env:
+          DEPLOY_URL: ${{ vars.STAGING_URL }}
+
+  deploy-prod:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: my-app
+
+      - name: Deploy to Prod
+        run: echo "Deploying to prod with secret ${{ secrets.DEPLOY_KEY }}"
+        env:
+          DEPLOY_URL: ${{ vars.PROD_URL }}
